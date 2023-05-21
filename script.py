@@ -77,7 +77,7 @@ def check_common(password):
 def load_words(word_file):
     """Load words from a file into a set."""
     with open(word_file) as f:
-        return set(word.strip().lower() for word in f)
+        return set(word.strip().lower() for word in f if len(word.strip()) >= 4)
 
 def contains_dictionary_word(password, words):
     """Check if a password contains a word from the dictionary."""
@@ -96,7 +96,16 @@ def check_sequence(password, username):
     return False
 
 def generate_alternative_passwords(password, num):
-    return [password + ''.join(random.choices(string.ascii_lowercase, k=3)) for _ in range(num)]
+    alternatives = []
+    for i in range(num):
+      temp = password
+      temp += not indicators['digit'] and random.choice(string.digits) or ''
+      temp += not indicators['uppercase'] and random.choice(string.ascii_uppercase) or ''
+      temp += not indicators['lowercase'] and random.choice(string.ascii_lowercase) or ''
+      temp += not indicators['special'] and random.choice(string.punctuation) or ''
+      alternatives.append(temp)
+    return alternatives
+
 
 
 args = parser.parse_args()
@@ -115,13 +124,14 @@ if args.command == 'check':
     for detail in new_details:
         print(detail)
     print('\n')
-    print('======================== UPGRADED OPTIONS ==========================')
-    print('press digit to copy password to clipboard')
-    alternatives = generate_alternative_passwords(args.password, 5)
-    for i, alt in enumerate(alternatives, start=1):
-        print(f"{i}. {alt}")
-    choice = input("Enter the number of the password you want to use, or 'n' to cancel: ")
-    if choice.isdigit() and 1 <= int(choice) <= len(alternatives):
-        chosen_password = alternatives[int(choice) - 1]
-        # Copy the password to clipboard
-        pyperclip.copy(chosen_password)
+    if check_password(args.password) < 8:
+      print('======================== UPGRADED OPTIONS ==========================')
+      print('press digit to copy password to clipboard')
+      alternatives = generate_alternative_passwords(args.password, 5)
+      for i, alt in enumerate(alternatives, start=1):
+          print(f"{i}. {alt}")
+      choice = input("Enter the number of the password you want to use, or 'n' to cancel: ")
+      if choice.isdigit() and 1 <= int(choice) <= len(alternatives):
+          chosen_password = alternatives[int(choice) - 1]
+          # Copy the password to clipboard
+          pyperclip.copy(chosen_password)
