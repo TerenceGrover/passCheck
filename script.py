@@ -3,6 +3,11 @@ import random
 import argparse
 from collections import deque
 import pyperclip
+import getpass
+
+# Gets the username of the current user
+username = getpass.getuser()
+print('Welcome ' + username + '!')
 
 # Create top-level parser
 parser = argparse.ArgumentParser()
@@ -27,7 +32,8 @@ details = {
     'uppercase': 'Password should contain at least one uppercase letter',
     'lowercase': 'Password should contain at least one lowercase letter',
     'special': 'Password should contain at least one special character',
-    'word': 'Password should not contain a common word'
+    'word': 'Password should not contain a common word',
+    'username': 'Password should not contain any personal info like username, name, etc...'
 }
 
 new_details = deque([])
@@ -49,6 +55,8 @@ def check_password(password):
     indicators['special'] = any(char in string.punctuation for char in password)
     # 6. Check if password contains a common word
     indicators['word'] = not contains_dictionary_word(password, words)
+    # 7. Check if password contains personal info
+    indicators['username'] = not check_sequence(password, username)
     # Once those are done, return a score between 0 and 10
     score = 0
     for indicator, val in indicators.items():
@@ -78,6 +86,13 @@ def contains_dictionary_word(password, words):
         for j in range(i + 1, len(password) + 1):
             if password_lower[i:j] in words:
                 return True
+    return False
+
+def check_sequence(password, username):
+    for i in range(len(username) - 3):
+        sequence = username[i:i+4].lower()
+        if sequence in password.lower():
+            return True
     return False
 
 def generate_alternative_passwords(password, num):
