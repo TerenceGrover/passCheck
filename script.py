@@ -2,7 +2,7 @@ import string
 import random
 import argparse
 from collections import deque
-# import pyperclip
+import pyperclip
 
 # Create top-level parser
 parser = argparse.ArgumentParser()
@@ -17,7 +17,8 @@ indicators = {
         'digit': False,
         'uppercase': False,
         'lowercase': False,
-        'special': False
+        'special': False,
+        'word': False
     }
 
 details = {
@@ -25,7 +26,8 @@ details = {
     'digit': 'Password should contain at least one digit',
     'uppercase': 'Password should contain at least one uppercase letter',
     'lowercase': 'Password should contain at least one lowercase letter',
-    'special': 'Password should contain at least one special character'
+    'special': 'Password should contain at least one special character',
+    'word': 'Password should not contain a common word'
 }
 
 new_details = deque([])
@@ -45,6 +47,8 @@ def check_password(password):
     indicators['lowercase'] = any(char.islower() for char in password)
     # 5. Check if password contains at least one special character
     indicators['special'] = any(char in string.punctuation for char in password)
+    # 6. Check if password contains a common word
+    indicators['word'] = not contains_dictionary_word(password, words)
     # Once those are done, return a score between 0 and 10
     score = 0
     for indicator, val in indicators.items():
@@ -62,7 +66,26 @@ def check_common(password):
         common_passwords = f.read().splitlines()
     return password in common_passwords
 
+def load_words(word_file):
+    """Load words from a file into a set."""
+    with open(word_file) as f:
+        return set(word.strip().lower() for word in f)
+
+def contains_dictionary_word(password, words):
+    """Check if a password contains a word from the dictionary."""
+    password_lower = password.lower()
+    for i in range(len(password)):
+        for j in range(i + 1, len(password) + 1):
+            if password_lower[i:j] in words:
+                return True
+    return False
+
+def generate_alternative_passwords(password, num):
+    return [password + ''.join(random.choices(string.ascii_lowercase, k=3)) for _ in range(num)]
+
+
 args = parser.parse_args()
+words = load_words('word_file.txt')
 
 if args.command == 'check':
     if len(args.password) < 8:
@@ -77,3 +100,13 @@ if args.command == 'check':
     for detail in new_details:
         print(detail)
     print('\n')
+    print('======================== UPGRADED OPTIONS ==========================')
+    print('press digit to copy password to clipboard')
+    alternatives = generate_alternative_passwords(args.password, 5)
+    for i, alt in enumerate(alternatives, start=1):
+        print(f"{i}. {alt}")
+    choice = input("Enter the number of the password you want to use, or 'n' to cancel: ")
+    if choice.isdigit() and 1 <= int(choice) <= len(alternatives):
+        chosen_password = alternatives[int(choice) - 1]
+        # Copy the password to clipboard
+        pyperclip.copy(chosen_password)
